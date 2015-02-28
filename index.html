@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Ember Simple Auth - Azure Active Directory with ADAL</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css">
+    <script src="http://code.jquery.com/jquery-2.1.3.js"></script>
+    <script src="http://builds.emberjs.com/release/ember-template-compiler.js"></script>
+    <script src="http://builds.emberjs.com/release/ember.js"></script>
+    <script src="ember-simple-auth.js"></script>
+    <script src="adal.js"></script>
+
+  </head>
+  <body style="padding-top: 50px;">
+    <script type="text/x-handlebars">
+      <nav class="navbar navbar-default navbar-fixed-top">
+        <div class="navbar-header">
+          {{#link-to 'index' classNames='navbar-brand'}}
+            Home
+          {{/link-to}}
+        </div>
+        <div class="collapse navbar-collapse navbar-ex5-collapse">
+          <ul class="nav navbar-nav">
+           
+          </ul>
+          {{! display logout button when the session is authenticated, login button otherwise }}
+          {{#if session.isAuthenticated}}
+            <a {{ action 'invalidateSession' }} class="btn btn-danger navbar-btn navbar-right">Logout</a>
+          {{else}}
+            {{#link-to 'login' class="btn btn-success navbar-btn navbar-right"}}Login{{/link-to}}
+          {{/if}}
+        </div>
+      </nav>
+      <div class="container">
+        {{outlet}}
+
+        
+      </div>
+     
+    </script>
+
+    <script type="text/x-handlebars" data-template-name="index">
+      <div class="page-header">
+        <h1>AAD Ember simpleauth example</h1>
+      </div>
+      {{#unless session.isAuthenticated}}
+        <div class="alert alert-info">
+          {{#link-to 'login' class="alert-link"}}login{{/link-to}} with your <i class="fa fa-aad-square"></i> Azure AD account.
+        </div>
+      {{/unless}}
+        {{#if session.isAuthenticated}}
+        {{#link-to 'protected' class="alert-link"}}Go to the protected page{{/link-to}}
+
+        {{/if}}
+    </script>
+
+    <script type="text/x-handlebars" data-template-name="login">
+      <div class="page-header">
+        <h1>Login</h1>
+        <div class="alert alert-info">
+          Login with <a {{ action 'authenticateWithAAD' }} class="alert-link" style="cursor: pointer;"><i class="fa fa-aad-square"></i> Azure AD</a>.
+        </div>
+      </div>
+    </script>
+
+    <script type="text/x-handlebars" data-template-name="protected">
+      <div class="page-header">
+        <h1>Protected Page</h1>
+      </div>
+      <div class="alert alert-warning">
+        This is a protected page only visible to authenticated users!
+          <code>{{model}}</code>
+      </div>
+    </script>
+
+    <script type="text/javascript">
+        //Here we initialize the app.
+        //TODO: You need to configure the following parameters according to your Azure Active Directory Applicaiton settings
+        //Also need to enable implicit grant = true (opening the manifest and changing it)
+        var aadConfig = {
+            tenant: 'ted1.onmicrosoft.com',
+            clientId: 'baf207f7-52a4-44c1-b3bf-8ac8dd8a15ad',
+            postLogoutRedirectUri: window.location.origin,
+            cacheLocation: 'localStorage', // enable this for IE, as sessionStorage does not work for localhost.
+        };
+        var authContext = new AuthenticationContext(aadConfig);
+        window.ENV = window.ENV || {};
+        window.ENV['simple-auth'] = {
+            authorizer: 'authorizer:aad',
+            crossOriginWhitelist: ['*']
+           
+        };
+
+
+      Ember.Application.initializer({
+        name: 'authentication',
+        before: 'simple-auth',
+        initialize: function(container, application) {
+          // register the AAD authenticator and authorizer so the session can find it      
+            container.register('authenticator:aad', App.AzureADAuthenticator);
+            container.register('authorizer:aad', App.AzureADAuthorizer);
+        }
+      });
+
+      App = Ember.Application.create();
+        
+      App.Router.reopen({
+        rootURL: '/index.html'
+      });
+
+      App.Router.map(function() {
+        // login route
+        this.route('login');
+        // protected route that's inaccessible without authentication
+        this.route('protected');
+
+        //We need this in order to trigger the page load event in the precise right place where we can go talk to the session object as well as ADAL
+        this.route('index', { path: '/' });
+      
+      });
+
+      // the custom authenticator that initiates the authentication process with AAD
+      App.AzureADAuthenticator = SimpleAuth.Authenticators.Base.extend({
+          restore: function (properties) {
+              return new Ember.RSVP.Promise(function (resolve, reject) {
+                  if (!Ember.isEmpty(properties.user)) {
+                      resolve(properties);
+                  } else {
+                      reject();
+                  }
+              });
+          },
+          authenticate: function () {
+              return new Ember.RSVP.Promise(function (resolve, reject) {
+                  if (!authContext.getCachedUser()) {
+                      authContext.login(); //Login will cause a page redirection
+                  }
+                  else {
+                      //If we're here, then authenticate has been called for the second time (after the refresh). This means we're already authenticated.
+                      resolve({ user: authContext.getCachedUser() });
+                  }
+              });
+          },
+          invalidate: function () {
+              return Ember.RSVP.resolve();
+          }
+      });
+     
+    
+
+      App.AzureADAuthorizer = SimpleAuth.Authorizers.Base.extend({
+          //Authorizes the XHR request. The assumption here is that the resource ID is the origin of the URL. That may not be the case for you, in which case you need to define
+          //how to locate the resource ID for a give URI you are trying to call (have that as a configuration?)
+          authorize: function (jqXHR, requestOptions) {
+
+              var l = getLocation(requestOptions.url);
+              var resource = l.origin;
+
+              return authContext.acquireToken(resource, function (error, token) {
+                  jqXHR.setRequestHeader('Authorization', 'Bearer ' + token);
+              });
+          }
+      });
+
+      App.ApplicationRoute = Ember.Route.extend(SimpleAuth.ApplicationRouteMixin, {});
+
+      // define the login route that defines the authentication actions
+      App.LoginRoute = Ember.Route.extend({
+         
+        actions: {
+            // action to trigger authentication with Google+
+          authenticateWithAAD: function () {
+              this.get('session').authenticate('authenticator:aad', {});
+          }
+        }
+      });
+     
+
+      //Protected route. Every call to web services here will be automatically secured via the authorizer
+      App.ProtectedRoute = Ember.Route.extend(SimpleAuth.AuthenticatedRouteMixin, {
+          model:  function () {
+                  return new Ember.RSVP.Promise(function (resolve, reject) {
+                      Ember.$.get('https://localhost:44320/test/test2').then(function (response) {
+                          resolve(JSON.stringify(response));
+                      });
+                  }); 
+          }
+      });
+
+      //Once the page refreshes (after the redirect from AAD's login) we check if we're in a call back. If so, and if we have an user, we call the authenticate for the second time
+      App.IndexRoute  = Ember.Route.extend({
+          setupController: function(controller) {
+              var isCallback = authContext.isCallback(window.location.hash);
+              authContext.handleWindowCallback();
+              if (isCallback && !authContext.getLoginError()) {
+                  window.location = authContext._getItem(authContext.CONSTANTS.STORAGE.LOGIN_REQUEST);
+
+                  if (authContext.getCachedUser()) {
+                      //Calling authenticate for the second time so it now works without a redirection.
+                      this.get('session').authenticate('authenticator:aad', {});
+                  }
+              }
+          },
+          actions: {
+              sessionAuthenticationSucceeded: function (error) {
+                 // this.controller.transitionToRoute(App.ProtectedRoute);
+                  window.location = "/index.html#/protected";
+                    
+                    
+                  }
+          }
+
+      });
+
+
+      var getLocation = function (href) {
+          var l = document.createElement("a");
+          l.href = href;
+          return l;
+      };
+
+     
+    </script>
+  </body>
+</html>
