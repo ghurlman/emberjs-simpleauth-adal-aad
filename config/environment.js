@@ -43,19 +43,17 @@ module.exports = function(environment) {
 
   }
 
-  var aadConfig = {
+  ENV.aadConfig = {
             tenant: 'common',
             clientId: 'ecf8a8db-09cf-4cd3-a06e-4f5c8022fc52',
             postLogoutRedirectUri: ENV.baseURL,
             cacheLocation: 'localStorage', // enable this for IE, as sessionStorage does not work for localhost.
         };
 
-  //ENV.authContext = new AuthenticationContext(aadConfig);
   ENV = ENV || {};
   ENV['simple-auth'] = {
       authorizer: 'authorizer:aad',
       crossOriginWhitelist: ['*']
-     
   };
 
   return ENV;
