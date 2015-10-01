@@ -1,11 +1,8 @@
 import Ember from 'ember';
+import AuthenticatedRouteMixin from 'simple-auth/mixins/authenticated-route-mixin';
 
-export default Ember.Route.extend({
+export default Ember.Route.extend(AuthenticatedRouteMixin, {
 	model:  function () {
-		return new Ember.RSVP.Promise(function (resolve, reject) {
-			Ember.$.get('https://www.google.com').then(function (response) {
-				resolve(JSON.stringify(response));
-			});
-		}); 
+		return Ember.$.getJSON('/api/test');
 	}
 });

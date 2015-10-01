@@ -5,7 +5,7 @@ module.exports = function(environment) {
     modulePrefix: 'ember-adal-test',
     environment: environment,
     baseURL: '/',
-    locationType: 'auto',
+    locationType: 'hash',
     EmberENV: {
       FEATURES: {
         // Here you can enable experimental features on an ember canary build
@@ -30,7 +30,7 @@ module.exports = function(environment) {
   if (environment === 'test') {
     // Testem prefers this...
     ENV.baseURL = '/';
-    ENV.locationType = 'none';
+    ENV.locationType = 'hash';
 
     // keep test console output quieter
     ENV.APP.LOG_ACTIVE_GENERATION = false;
@@ -50,11 +50,14 @@ module.exports = function(environment) {
             cacheLocation: 'localStorage', // enable this for IE, as sessionStorage does not work for localhost.
         };
 
-  ENV = ENV || {};
   ENV['simple-auth'] = {
       authorizer: 'authorizer:aad',
       crossOriginWhitelist: ['*']
   };
+	
+	ENV['simple-auth-oauth2'] = {
+  	serverTokenEndpoint: 'https://login.microsoftonline.com/common/oauth2/token'
+	};
 
   return ENV;
 };

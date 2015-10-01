@@ -13,7 +13,67 @@
 
   </head>
   <body style="padding-top: 50px;">
-    
+    <script type="text/x-handlebars">
+      <nav class="navbar navbar-default navbar-fixed-top">
+        <div class="navbar-header">
+          {{#link-to 'index' classNames='navbar-brand'}}
+            Home
+          {{/link-to}}
+        </div>
+        <div class="collapse navbar-collapse navbar-ex5-collapse">
+          <ul class="nav navbar-nav">
+           
+          </ul>
+          {{! display logout button when the session is authenticated, login button otherwise }}
+          {{#if session.isAuthenticated}}
+            <a {{ action 'invalidateSession' }} class="btn btn-danger navbar-btn navbar-right">Logout</a>
+          {{else}}
+            {{#link-to 'login' class="btn btn-success navbar-btn navbar-right"}}Login{{/link-to}}
+          {{/if}}
+        </div>
+      </nav>
+      <div class="container">
+        {{outlet}}
+
+        
+      </div>
+     
+    </script>
+
+    <script type="text/x-handlebars" data-template-name="index">
+      <div class="page-header">
+        <h1>AAD Ember simpleauth example</h1>
+      </div>
+      {{#unless session.isAuthenticated}}
+        <div class="alert alert-info">
+          {{#link-to 'login' class="alert-link"}}login{{/link-to}} with your <i class="fa fa-aad-square"></i> Azure AD account.
+        </div>
+      {{/unless}}
+        {{#if session.isAuthenticated}}
+        {{#link-to 'protected' class="alert-link"}}Go to the protected page{{/link-to}}
+
+        {{/if}}
+    </script>
+
+    <script type="text/x-handlebars" data-template-name="login">
+      <div class="page-header">
+        <h1>Login</h1>
+        <div class="alert alert-info">
+          Login with <a {{ action 'authenticateWithAAD' }} class="alert-link" style="cursor: pointer;"><i class="fa fa-aad-square"></i> Azure AD</a>.
+        </div>
+      </div>
+    </script>
+
+    <script type="text/x-handlebars" data-template-name="protected">
+      <div class="page-header">
+        <h1>Protected Page</h1>
+      </div>
+      <div class="alert alert-warning">
+        This is a protected page only visible to authenticated users!
+          <code>{{model}}</code>
+      </div>
+    </script>
+
     <script type="text/javascript">
         //Here we initialize the app.
         //TODO: You need to configure the following parameters according to your Azure Active Directory Applicaiton settings

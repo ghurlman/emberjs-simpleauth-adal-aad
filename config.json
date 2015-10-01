@@ -1,0 +1,6 @@
+{
+	"ida:Audience": "ecf8a8db-09cf-4cd3-a06e-4f5c8022fc52", //"e89c923f-4748-419d-97c7-7d142b7f73ed",
+	//"4d5a28ce-0a05-43dd-aaba-f98381566a97", //"http://parawebapp2015.ghmsftoutlook.onmicrosoft.com",
+	"ida:RedirectUri": "http://localhost:5000",
+	"ida:Tenant": "ghmsftoutlook.onmicrosoft.com"
+}
