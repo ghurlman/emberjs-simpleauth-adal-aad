@@ -37,7 +37,7 @@ export default {
 					});
 			},
 			invalidate: function () {
-					return Ember.RSVP.resolve();
+					return Ember.RSVP.resolve({ user: ENV.authContext.getCachedUser() });
 			}
 		}));
 		container.register('authorizer:aad', authorizersbase.extend({
