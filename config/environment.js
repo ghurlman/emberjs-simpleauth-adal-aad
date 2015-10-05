@@ -45,9 +45,9 @@ module.exports = function(environment) {
 
   ENV.aadConfig = {
             tenant: 'common',
-            clientId: 'ecf8a8db-09cf-4cd3-a06e-4f5c8022fc52',
+            clientId: '2d881456-cd08-49e6-99b2-d6f8f9e755a5', //ecf8a8db-09cf-4cd3-a06e-4f5c8022fc52',
             postLogoutRedirectUri: ENV.baseURL,
-            cacheLocation: 'localStorage', // enable this for IE, as sessionStorage does not work for localhost.
+            cacheLocation: 'localStorage' // enable this for IE, as sessionStorage does not work for localhost.
         };
 
   ENV['simple-auth'] = {
